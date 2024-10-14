@@ -233,6 +233,9 @@ def our_main(data_dir, args):
         group_size=512,
         dropout=0.0,
     ).to(device)
+
+    print(f"Model: {model}")
+    print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = torch.nn.BCEWithLogitsLoss(reduction="none")
 
