@@ -38,9 +38,8 @@ def evaluation(y_pred, y_true, mask):
     return auroc, auprc
 
 
-def train(model, dataloader, loss_func, optimizer, epoch, scheduler, args):
+def train(model, dataloader, loss_func, optimizer, epoch):
     model.train()
-    log_interval = 200
     total_loss = 0
 
     for idx, (expr_embedding, label_matrix, mask) in enumerate(dataloader):
@@ -65,21 +64,8 @@ def train(model, dataloader, loss_func, optimizer, epoch, scheduler, args):
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
         optimizer.step()
 
-        if args and args.scheduler_flag:
-            scheduler.step()
-
-        # Logging and evaluation
-        if idx % log_interval == 0:
-            auroc, auprc = evaluation(
-                y_pred=predicted_output, y_true=label_matrix, mask=mask
-            )
-            print(
-                "| epoch {:3d} | {:5d} /{:5d} batches |Train loss {:8.3f} | AUROC {:8.3f} | AUPRC {:8.3f}".format(
-                    epoch, idx, len(dataloader), final_loss.item(), auroc, auprc
-                )
-            )
-
-    print("| epoch {:3d} | total_loss {:8.3f}".format(epoch, total_loss))
+    # there's only one batch so we can just use the last one
+    return total_loss, predicted_output, label_matrix, mask
 
 
 def validate(model, dataloader, loss_func):
@@ -251,10 +237,19 @@ def our_main(data_dir, args):
     loss_fn = torch.nn.BCEWithLogitsLoss(reduction="none")
 
     for epoch in range(1, epochs + 1):
-        train(model, interaction_train_loader, loss_fn, optimizer, epoch, None, None)
+        total_loss, predicted_output, label_matrix, mask = train(
+            model, interaction_train_loader, loss_fn, optimizer, epoch
+        )
 
         # only validate at the end of every 10 epochs
-        if epoch % 25 == 0:
+        if epoch % 50 == 0:
+            AUC_train, AUPR_train = evaluation(predicted_output, label_matrix, mask)
+            print(
+                "| end of epoch {:3d} | train AUROC {:8.3f} | train AUPRC {:8.3f} | total_loss {:8.3f}".format(
+                    epoch, AUC_train, AUPR_train, total_loss
+                )
+            )
+
             AUC_val, AUPR_val = validate(model, interaction_val_loader, loss_fn)
             print("-" * 100)
             print(
