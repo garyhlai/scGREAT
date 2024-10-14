@@ -254,7 +254,7 @@ def our_main(data_dir, args):
         train(model, interaction_train_loader, loss_fn, optimizer, epoch, None, None)
 
         # only validate at the end of every 10 epochs
-        if epoch % 50 == 0:
+        if epoch % 25 == 0:
             AUC_val, AUPR_val = validate(model, interaction_val_loader, loss_fn)
             print("-" * 100)
             print(
@@ -270,7 +270,3 @@ def our_main(data_dir, args):
                 )
             )
             print("-" * 100)
-
-            if AUC_val < 0.501:
-                print("AUC_val < 0.501 !!")
-                break
