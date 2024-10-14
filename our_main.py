@@ -256,7 +256,7 @@ def our_main(data_dir, args):
         num_layers=num_layers,
         group_size=512,
         dropout=0.0,
-    )
+    ).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = torch.nn.BCEWithLogitsLoss(reduction="none")
 
