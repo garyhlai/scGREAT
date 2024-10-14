@@ -160,6 +160,18 @@ class GrnTransformer(nn.Module):
         group_size=512,
         dropout=0.0,
     ):
+        print(
+            f"""Initializing GrnTransformer
+        num_genes: {num_genes}
+        embed_dim: {embed_dim}
+        num_heads: {num_heads}
+        hidden_dim: {hidden_dim}
+        num_layers: {num_layers}
+        group_size: {group_size}
+        dropout: {dropout}
+        """
+        )
+
         super().__init__()
         self.layers = nn.ModuleList(
             [
