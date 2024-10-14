@@ -54,23 +54,13 @@ def train(model, dataloader, loss_func, optimizer, epoch, scheduler, args):
         mask = mask.to(torch.float32).to(device)  # [batch_size, num_genes, num_genes]
 
         optimizer.zero_grad()
-
-        # Forward pass through the model
         predicted_output = model(
             expr_embedding
         )  # Should output [batch_size, num_genes, num_genes]
-
-        # Compute the element-wise loss
         loss = loss_func(predicted_output, label_matrix)
-
-        # Apply the mask to ignore unlabeled gene pairs
         masked_loss = loss * mask
-
-        # Compute the mean loss over labeled pairs
         final_loss = masked_loss.sum() / mask.sum()
         total_loss += final_loss.item()
-
-        # Backpropagation
         final_loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
         optimizer.step()
@@ -80,12 +70,12 @@ def train(model, dataloader, loss_func, optimizer, epoch, scheduler, args):
 
         # Logging and evaluation
         if idx % log_interval == 0:
-            AUROC, AUPRC = evaluation(
+            auroc, auprc = evaluation(
                 y_pred=predicted_output, y_true=label_matrix, mask=mask
             )
             print(
                 "| epoch {:3d} | {:5d} /{:5d} batches |Train loss {:8.3f} | AUROC {:8.3f} | AUPRC {:8.3f}".format(
-                    epoch, idx, len(dataloader), final_loss.item(), AUROC, AUPRC
+                    epoch, idx, len(dataloader), final_loss.item(), auroc, auprc
                 )
             )
 
@@ -262,22 +252,25 @@ def our_main(data_dir, args):
 
     for epoch in range(1, epochs + 1):
         train(model, interaction_train_loader, loss_fn, optimizer, epoch, None, None)
-        AUC_val, AUPR_val = validate(model, interaction_val_loader, loss_fn)
-        print("-" * 100)
-        print(
-            "| end of epoch {:3d} | valid AUROC {:8.3f} | valid AUPRC {:8.3f}".format(
-                epoch, AUC_val, AUPR_val
-            )
-        )
-        print("-" * 100)
-        AUC_test, AUPR_test = validate(model, interaction_test_loader, loss_fn)
-        print(
-            "| end of epoch {:3d} | test  AUROC {:8.3f} | test  AUPRC {:8.3f}".format(
-                epoch, AUC_test, AUPR_test
-            )
-        )
-        print("-" * 100)
 
-        if AUC_val < 0.501:
-            print("AUC_val < 0.501 !!")
-            break
+        # only validate at the end of every 10 epochs
+        if epoch % 10 == 0:
+            AUC_val, AUPR_val = validate(model, interaction_val_loader, loss_fn)
+            print("-" * 100)
+            print(
+                "| end of epoch {:3d} | valid AUROC {:8.3f} | valid AUPRC {:8.3f}".format(
+                    epoch, AUC_val, AUPR_val
+                )
+            )
+            print("-" * 100)
+            AUC_test, AUPR_test = validate(model, interaction_test_loader, loss_fn)
+            print(
+                "| end of epoch {:3d} | test  AUROC {:8.3f} | test  AUPRC {:8.3f}".format(
+                    epoch, AUC_test, AUPR_test
+                )
+            )
+            print("-" * 100)
+
+            if AUC_val < 0.501:
+                print("AUC_val < 0.501 !!")
+                break
