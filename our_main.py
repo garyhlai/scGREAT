@@ -244,6 +244,9 @@ def our_main(data_dir, args):
         [num_negative_samples / num_positive_samples], device=device
     )
     loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=positive_weight, reduction="none")
+    print(
+        f"There are {num_positive_samples} positive samples, {num_negative_samples} negative samples, and the positive weight is {positive_weight}"
+    )
 
     for epoch in range(1, epochs + 1):
         total_loss, predicted_output, label_matrix, mask = train(
