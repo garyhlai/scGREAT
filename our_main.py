@@ -231,7 +231,7 @@ def our_main(data_dir, args):
         hidden_dim=768,
         num_layers=num_layers,
         group_size=512,
-        dropout=0.0,
+        dropout=0.1,
     ).to(device)
 
     print(f"Model: {model}")
