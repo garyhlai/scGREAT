@@ -236,8 +236,14 @@ def our_main(data_dir, args):
 
     print(f"Model: {model}")
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = torch.nn.BCEWithLogitsLoss(reduction="none")
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+
+    num_positive_samples = interaction_train_ds.labels.sum()
+    num_negative_samples = len(interaction_train_ds.labels) - num_positive_samples
+    positive_weight = torch.tensor(
+        [num_negative_samples / num_positive_samples], device=device
+    )
+    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=positive_weight, reduction="none")
 
     for epoch in range(1, epochs + 1):
         total_loss, predicted_output, label_matrix, mask = train(
@@ -246,25 +252,23 @@ def our_main(data_dir, args):
 
         # only validate at the end of every 10 epochs
         if epoch % 50 == 0:
-            AUC_train, AUPR_train = evaluation(predicted_output, label_matrix, mask)
+            auc_train, aupr_train = evaluation(predicted_output, label_matrix, mask)
             print(
-                "| end of epoch {:3d} | train AUROC {:8.3f} | train AUPRC {:8.3f} | total_loss {:8.3f}".format(
-                    epoch, AUC_train, AUPR_train, total_loss
-                )
+                f"| end of epoch {epoch} | train AUROC {auc_train} | train AUPRC {aupr_train} | total_loss {total_loss}"
             )
 
-            AUC_val, AUPR_val = validate(model, interaction_val_loader, loss_fn)
+            auc_val, aupr_val = validate(model, interaction_val_loader, loss_fn)
             print("-" * 100)
             print(
                 "| end of epoch {:3d} | valid AUROC {:8.3f} | valid AUPRC {:8.3f}".format(
-                    epoch, AUC_val, AUPR_val
+                    epoch, auc_val, aupr_val
                 )
             )
             print("-" * 100)
-            AUC_test, AUPR_test = validate(model, interaction_test_loader, loss_fn)
+            auc_test, aupr_test = validate(model, interaction_test_loader, loss_fn)
             print(
                 "| end of epoch {:3d} | test  AUROC {:8.3f} | test  AUPRC {:8.3f}".format(
-                    epoch, AUC_test, AUPR_test
+                    epoch, auc_test, aupr_test
                 )
             )
             print("-" * 100)
